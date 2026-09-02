@@ -131,6 +131,21 @@ if (src.includes(broken)) {
 } else {
   console.log("  adapter flag already correct");
 }
+
+// Second adapter defect: buildResumePrompt starts at the last user message and walks back
+// over toolResult messages only. Plan mode appends its "[PLAN MODE ACTIVE]" preamble as a
+// user message, so the prompt became the preamble alone and the human's question was
+// dropped — the model answered with nothing at all.
+const pb = path.join(target, "npm/node_modules/pi-claude-cli/src/prompt-builder.ts");
+const pbSrc = fs.readFileSync(pb, "utf8");
+const narrow = 'if (messages[i].role === "toolResult") {\n      startIdx = i;';
+if (pbSrc.includes(narrow)) {
+  fs.writeFileSync(pb, pbSrc.replace(narrow,
+    'if (messages[i].role === "toolResult" || messages[i].role === "user") {\n      startIdx = i;'));
+  console.log("  patched the adapter's resume-prompt walk (plan mode lost the user's question)");
+} else {
+  console.log("  adapter resume-prompt walk already correct");
+}
 const sp = path.join(target, "settings.json");
 const settings = JSON.parse(fs.readFileSync(sp, "utf8"));
 if (!settings.defaultProvider) {

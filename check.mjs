@@ -132,5 +132,14 @@ if (existsSync(adapter)) {
     "claude adapter is UNPATCHED — the system prompt is being lost; run ./install.sh --claude");
 }
 
+// The same adapter drops the human's question whenever an extension appends a user message
+// after it, which is exactly what plan mode does. Observed as three empty assistant turns.
+const promptBuilder = join(target, "npm", "node_modules", "pi-claude-cli", "src", "prompt-builder.ts");
+if (existsSync(promptBuilder)) {
+  expect(/role === "toolResult" \|\| messages\[i\]\.role === "user"/.test(readFileSync(promptBuilder, "utf8")),
+    "claude adapter keeps the user's question in plan mode",
+    "claude adapter is UNPATCHED — plan mode will return empty answers; run ./install.sh --claude");
+}
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);
