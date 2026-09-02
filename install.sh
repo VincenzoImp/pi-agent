@@ -20,8 +20,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 target="${PI_AGENT_DIR:-${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}}"
 stamp="$(date +%Y%m%d-%H%M%S)"
 entries=(AGENTS.md presets.json skills prompts agents themes extensions)
-# Our fork of pi-claude-cli, pinned to a tag. See section 7 for why it is not the npm package.
-CLAUDE_ADAPTER="git:github.com/VincenzoImp/pi-claude-cli@v0.3.1-pi-agent.1"
+# The Claude provider, installed only with --claude. See section 5.
+CLAUDE_ADAPTER="npm:pi-claude-bridge@0.7.0"
 
 skip_packages=0; want_claude=0
 for arg in "$@"; do
@@ -71,14 +71,9 @@ fi
 for entry in "${entries[@]}"; do cp -R "$here/agent/$entry" "$target/"; done
 say "copied: ${entries[*]}"
 
-# --- 4. Extension dependencies (the sandbox runtime; lockfile committed, so builds repeat) ------
-
-if [ "$skip_packages" -eq 0 ]; then
-  ( cd "$target/extensions" && npm install --silent --no-audit --no-fund )
-  say "installed extension dependencies"
-fi
-
-# --- 5. Pi packages, through Pi itself ---------------------------------------------------------
+# --- 4. Pi packages, through Pi itself ---------------------------------------------------------
+# Nothing under extensions/ has a dependency any more, so there is no npm install step here:
+# the four files left are standalone, and everything with a runtime need is a package below.
 
 if [ "$skip_packages" -eq 0 ]; then
   grep -Ev '^\s*(#|$)' "$here/packages.txt" | while IFS= read -r line; do
@@ -89,7 +84,7 @@ if [ "$skip_packages" -eq 0 ]; then
   done
 fi
 
-# --- 6. The one settings key this setup needs, merged and never overwritten --------------------
+# --- 5. The one settings key this setup needs, merged and never overwritten --------------------
 # pi-subagents' builtins do not inherit the global AGENTS.md unless told to; without this the
 # working agreement reaches the main model but none of the subagents it dispatches.
 
@@ -112,15 +107,11 @@ console.log(changed ? "  merged subagent overrides into settings.json"
                     : "  subagent overrides already present");
 MERGE
 
-# --- 7. Optional: Claude on a subscription -----------------------------------------------------
-# The adapter routes Anthropic through the Claude CLI so a Pro/Max login bills against the plan.
-# Published 0.3.1 has two defects that both fail silently: it hands a file path to a flag that
-# takes literal text, losing the entire system prompt, and its resume prompt drops the user's
-# question whenever an extension appends a message after it, which is what plan mode does.
-#
-# Both are fixed in a pinned tag of our fork rather than by editing node_modules, because a
-# `pi update` reinstalls the package and would revert any edit — silently, again. Upstream has
-# the first as PR #39; the fork carries both.
+# --- 6. Optional: Claude on a subscription -----------------------------------------------------
+# pi-claude-bridge runs Claude through Anthropic's own Agent SDK, and bills against a Pro/Max
+# plan the way Claude Code does. It replaces pi-claude-cli, which spawns the `claude` binary
+# and had to be forked to be usable at all: 1.1k downloads a month against 19k, and nothing
+# published since March.
 
 if [ "$want_claude" -eq 1 ]; then
   PI_CODING_AGENT_DIR="$target" pi install "$CLAUDE_ADAPTER" >/dev/null
@@ -132,17 +123,17 @@ const target = process.argv[2];
 const sp = path.join(target, "settings.json");
 const settings = JSON.parse(fs.readFileSync(sp, "utf8"));
 if (!settings.defaultProvider) {
-  settings.defaultProvider = "pi-claude-cli";
-  settings.defaultModel ??= "claude-opus-4-5";
+  settings.defaultProvider = "claude-bridge";
+  settings.defaultModel ??= "claude-opus-5";
   fs.writeFileSync(sp, JSON.stringify(settings, null, 2) + "\n");
-  console.log("  defaultProvider set to pi-claude-cli");
+  console.log("  defaultProvider set to claude-bridge");
 } else {
   console.log(`  defaultProvider is already ${settings.defaultProvider}; left alone`);
 }
 CLAUDE
 fi
 
-# --- 8. What to do next ------------------------------------------------------------------------
+# --- 7. What to do next ------------------------------------------------------------------------
 
 cat <<'DONE'
 

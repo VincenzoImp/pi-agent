@@ -16,24 +16,13 @@ byte-identical apart from the provenance header each file carries:
   agent/extensions/questionnaire.ts
   agent/extensions/todo.ts
   agent/extensions/tools.ts
-  agent/extensions/sandbox/index.ts
-  agent/extensions/plan-mode/utils.ts
 
-Modified, and how:
+None of the four is modified, and none has a dependency of its own.
 
-  agent/extensions/plan-mode/index.ts
-      registers /plan-todos instead of /todos, because todo.ts owns /todos
-      and the second registration would shadow it
-      its injected plan-mode prompt points at the web_search tool instead of a
-      "brave-search skill", which no version of this setup has ever installed
-
-sandbox/index.ts is the only one with a dependency of its own,
-@anthropic-ai/sandbox-runtime (Apache-2.0, Anthropic), declared in
-agent/extensions/package.json and pinned at 0.0.75 rather than the 0.0.26 the
-example pins: it is the component that does the containing, and being 49
-releases behind on that is worse than diverging from the example. The three
-entry points the file calls -- initialize, reset, wrapWithSandbox -- were
-checked against 0.0.75 first.
+This repository previously also redistributed the sandbox and plan-mode
+examples. Both are now installed as maintained packages instead -- pi-sandbox
+and @narumitw/pi-plan-mode -- because a vendored copy is a snapshot that stops
+receiving fixes while still looking current.
 
 --------------------------------------------------------
 
@@ -47,6 +36,5 @@ Same upstream and licence as above.
 
 --------------------------------------------------------
 
-Everything else -- agent/skills/, agent/AGENTS.md, agent/extensions/effects-guard.ts,
-agent/extensions/worklog.ts, agent/extensions/lib/, install.sh -- is original to
-this repository, MIT under LICENSE.
+Everything else -- agent/skills/, agent/AGENTS.md, install.sh, check.mjs -- is
+original to this repository, MIT under LICENSE.

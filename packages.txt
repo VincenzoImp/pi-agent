@@ -11,3 +11,7 @@ npm:@narumitw/pi-goal@0.54.4            # /goal — budgets, no-progress guard, 
 npm:@narumitw/pi-statusline@0.50.0      # informative footer: model, tokens, git, cost
 npm:@narumitw/pi-usage@0.60.2           # /usage — account limits and consumption
 npm:pi-web-access@0.27.0                # web_search and fetch_content; no API key needed
+npm:@narumitw/pi-plan-mode@0.56.0       # /plan — read-only planning, replaces a vendored example
+npm:pi-sandbox@0.6.6                    # OS-level sandbox with interactive permission prompts
+npm:cc-safety-net@2.3.1                 # blocks destructive commands and secret-file reads
+npm:pi-hermes-memory@0.9.7              # memory that survives compaction; session search

@@ -81,12 +81,10 @@ commented-out block, no shim for a caller that no longer exists.
 - MCP servers are not connected at startup. If a capability still seems missing — a browser,
   a database — check `/mcp` before concluding you cannot do it.
 - Track work in progress with the todo tool. Durable state — the goal, decisions taken, work
-  still open — belongs in the worklog: `~/.pi/agent/worklog/<session>.md`, an ordinary file
-  you read and write with your normal tools. (Write that path literally: no agent-directory
-  environment variable is set inside `bash`, so `$PI_CODING_AGENT_DIR` would expand to nothing
-  and put the file in `/worklog/`. `/worklog` is a command the user types, not a tool you can
-  call.) It is the one thing that survives compaction intact, so what is only in the
-  conversation is what gets lost.
+  still open, and anything you got wrong and were corrected on — belongs in memory, through
+  the `memory_add`, `memory_replace` and `memory_remove` tools. Memory survives compaction;
+  the conversation does not, so what lives only in the conversation is what gets lost. Write
+  the decision and its reason, not a transcript.
 - Plans go where the project already keeps them; otherwise keep them in the conversation.
   Never commit a plan nobody asked for.
 - Read the final diff before handing work over: secrets, artifacts, scope creep,

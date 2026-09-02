@@ -1,7 +1,8 @@
 /**
  * Verifies that an installed copy of this setup actually loads — every skill, every prompt,
- * every extension, including the three that carry the limits (guard, worklog, sandbox), which
- * are exactly the ones a broken copy loses while still looking healthy.
+ * every extension, and the packages that carry the limits — the sandbox, the command guard and
+ * the memory that survives compaction — which are exactly what a broken copy loses while still
+ * looking healthy.
  *
  * Runs against ~/.pi/agent (or PI_AGENT_DIR) using the globally installed Pi. No build, no
  * network, no model call.
@@ -70,27 +71,38 @@ for (const file of readdirSync(join(repo, "agent", "prompts"))) {
 }
 
 const loadedExtensionPaths = extensions.extensions.map((extension) => extension.resolvedPath ?? "");
-for (const name of ["effects-guard.ts", "worklog.ts", "sandbox/index.ts", "plan-mode/index.ts",
-  "preset.ts", "questionnaire.ts", "todo.ts", "tools.ts"]) {
+for (const name of ["preset.ts", "questionnaire.ts", "todo.ts", "tools.ts"]) {
   expect(loadedExtensionPaths.some((path) => path.endsWith(`/extensions/${name}`)),
     `extension: ${name}`, `extension did not load: ${name}`);
 }
 
 // --- the traps this project actually fell into, kept as regressions ----------------------------
 
-// The agreement is always in context; if it names a worklog path the extension does not use,
-// the model keeps its worklog where compaction re-injection never looks.
-// It must also be a path the model can RESOLVE. Pi exports no agent-directory variable into
-// bash (only PI_CODING_AGENT and PI_SUBAGENT_PARENT_SESSION), so an env-var path expands to
-// nothing and lands the worklog in /worklog/. Observed on a real session: the model gave up
-// and invented ./worklog/ in the cwd, where compaction re-injection never looks.
+// The guardrails and the memory that survives compaction are packages now, not files here.
+// A copy that loses them still loads cleanly and looks healthy, which is exactly the failure
+// this project keeps meeting, so assert the manifest still names every one of them.
 const agreement = readFileSync(join(target, "AGENTS.md"), "utf8");
-expect(agreement.includes("~/.pi/agent/worklog/"),
-  "agreement names the worklog path the extension uses",
-  "AGENTS.md worklog path does not match extensions/worklog.ts");
-expect(!/\$PI_[A-Z_]*(DIR|HOME)[^\s`]*\/worklog/.test(agreement),
-  "the worklog path resolves inside bash",
-  "AGENTS.md points the worklog at an env var bash never sets — it will expand to /worklog/");
+const packages = readFileSync(join(repo, "packages.txt"), "utf8");
+for (const [name, role] of [
+  ["pi-web-access", "web search"],
+  ["pi-sandbox", "the OS sandbox"],
+  ["cc-safety-net", "destructive-command and secret-file blocking"],
+  ["pi-hermes-memory", "memory that survives compaction"],
+  ["@narumitw/pi-plan-mode", "plan mode"],
+]) {
+  expect(packages.includes(name), `packages.txt installs ${name}`,
+    `packages.txt no longer installs ${name} — the setup has no ${role}`);
+}
+
+// The agreement is always in context, so it must name the memory tools that actually exist.
+// It previously described a worklog file the model could not resolve, and the model invented
+// its own location; the compaction re-injection then read an empty directory.
+expect(agreement.includes("memory_add"),
+  "agreement names the memory tools the model can call",
+  "AGENTS.md does not tell the model how to record durable state");
+expect(!/worklog/i.test(agreement),
+  "agreement carries no stale worklog references",
+  "AGENTS.md still refers to the removed worklog extension");
 
 // The agreement is always in context, so a skill it names that no longer exists is an
 // instruction the model cannot follow. Removing the bundled `web` skill left exactly that
@@ -103,14 +115,6 @@ for (const name of namedSkills) {
 }
 expect(!/arcwell/i.test(agreement), "agreement carries no stale references", "AGENTS.md still mentions arcwell");
 
-// Web access is a package, not a shell script here: a bash-based search is unreachable from
-// inside the sandbox (its allowlist is npm/PyPI/GitHub), which reads as "search is broken".
-// Measured on a real host: DuckDuckGo's keyless endpoint bot-refused 5 of 5 queries.
-const packages = readFileSync(join(repo, "packages.txt"), "utf8");
-expect(packages.includes("pi-web-access"),
-  "web access ships as a package",
-  "packages.txt no longer installs pi-web-access — the setup has no web search");
-
 // Without this settings key the agreement reaches the model but none of its subagents.
 try {
   const settings = JSON.parse(readFileSync(join(target, "settings.json"), "utf8"));
@@ -122,25 +126,13 @@ try {
   bad("settings.json is missing or unreadable — run ./install.sh");
 }
 
-// The Claude adapter, when installed, must pass the system prompt as a FILE flag. 0.3.1 hands
-// a path to a literal-text flag, so the agreement and every skill silently never reach the
-// model (rchern/pi-claude-cli#39) — and a `pi update` reverts the fix. This keeps the loss loud.
-// Published pi-claude-cli 0.3.1 loses the system prompt entirely, and drops the user's
-// question whenever an extension appends a message after it (plan mode does). Both fail
-// silently, so the loud check is that the npm build is not what got installed.
-const npmAdapter = join(target, "npm", "node_modules", "pi-claude-cli");
-const forkAdapter = join(target, "git", "github.com", "VincenzoImp", "pi-claude-cli");
-if (existsSync(npmAdapter) || existsSync(forkAdapter)) {
-  expect(existsSync(forkAdapter) && !existsSync(npmAdapter),
-    "claude adapter is the fixed fork",
-    "claude adapter is the unfixed npm build — the system prompt is lost and plan mode " +
-    "returns empty answers; run ./install.sh --claude");
-}
-if (existsSync(forkAdapter)) {
-  const source = readFileSync(join(forkAdapter, "src", "prompt-builder.ts"), "utf8");
-  expect(/role === "toolResult" \|\| messages\[i\]\.role === "user"/.test(source),
-    "the fork carries the resume-prompt fix",
-    "the installed fork predates the plan-mode fix; re-run ./install.sh --claude");
+// The Claude provider is optional, but if the superseded one is present it is a fork we no
+// longer maintain and a package that silently loses the system prompt.
+for (const stale of [join(target, "npm", "node_modules", "pi-claude-cli"),
+  join(target, "git", "github.com", "VincenzoImp", "pi-claude-cli")]) {
+  expect(!existsSync(stale),
+    "no superseded Claude adapter installed",
+    `pi-claude-cli is still installed at ${stale}; pi-claude-bridge replaces it`);
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
