@@ -104,5 +104,15 @@ try {
   bad("settings.json is missing or unreadable — run ./install.sh");
 }
 
+// The Claude adapter, when installed, must pass the system prompt as a FILE flag. 0.3.1 hands
+// a path to a literal-text flag, so the agreement and every skill silently never reach the
+// model (rchern/pi-claude-cli#39) — and a `pi update` reverts the fix. This keeps the loss loud.
+const adapter = join(target, "npm", "node_modules", "pi-claude-cli", "src", "process-manager.ts");
+if (existsSync(adapter)) {
+  expect(readFileSync(adapter, "utf8").includes("--append-system-prompt-file"),
+    "claude adapter delivers the system prompt as a file",
+    "claude adapter is UNPATCHED — the system prompt is being lost; run ./install.sh --claude");
+}
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);
