@@ -1,0 +1,26 @@
+{
+  "packages": [
+    "npm:@spences10/pi-lsp@0.0.46",
+    "npm:@spences10/pi-context@0.1.16",
+    "npm:@spences10/pi-mcp@0.0.60",
+    "npm:@spences10/pi-redact@0.0.15",
+    "npm:pi-subagents@0.62.0",
+    "npm:@narumitw/pi-goal@0.54.4",
+    "npm:@narumitw/pi-statusline@0.50.0",
+    "npm:@narumitw/pi-usage@0.60.2"
+  ],
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
+  },
+  "defaultProjectTrust": "ask",
+  "subagents": {
+    "agentOverrides": {
+      "planner": { "inheritGlobalContext": true },
+      "reviewer": { "inheritGlobalContext": true },
+      "scout": { "inheritGlobalContext": true },
+      "worker": { "inheritGlobalContext": true }
+    }
+  }
+}

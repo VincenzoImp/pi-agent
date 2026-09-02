@@ -1,0 +1,50 @@
+pi-agent
+Copyright (c) 2026 VincenzoImp
+MIT, see LICENSE.
+
+--------------------------------------------------------
+
+Pi coding agent — example extensions
+Upstream:  @earendil-works/pi-coding-agent 0.84.4
+Project:   https://github.com/earendil-works/pi
+Licence:   MIT, Copyright (c) 2025 Mario Zechner
+
+Redistributed verbatim from packages/coding-agent/examples/extensions/,
+byte-identical apart from the provenance header each file carries:
+
+  agent/extensions/preset.ts
+  agent/extensions/questionnaire.ts
+  agent/extensions/todo.ts
+  agent/extensions/tools.ts
+  agent/extensions/sandbox/index.ts
+  agent/extensions/plan-mode/utils.ts
+
+Modified, and how:
+
+  agent/extensions/plan-mode/index.ts
+      registers /plan-todos instead of /todos, because todo.ts owns /todos
+      and the second registration would shadow it
+
+sandbox/index.ts is the only one with a dependency of its own,
+@anthropic-ai/sandbox-runtime (Apache-2.0, Anthropic), declared in
+agent/extensions/package.json and pinned at 0.0.75 rather than the 0.0.26 the
+example pins: it is the component that does the containing, and being 49
+releases behind on that is worse than diverging from the example. The three
+entry points the file calls -- initialize, reset, wrapWithSandbox -- were
+checked against 0.0.75 first.
+
+--------------------------------------------------------
+
+Pi coding agent — example subagents and prompt templates
+Same upstream and licence as above.
+
+  agent/prompts/scout-and-plan.md         byte-identical
+  agent/prompts/implement.md              + verification step
+  agent/prompts/implement-and-review.md   + verification step, reviewer sees the diff
+  agent/agents/planner.md                 rewritten; joins the pi-subagents chain
+
+--------------------------------------------------------
+
+Everything else -- agent/skills/, agent/AGENTS.md, agent/extensions/effects-guard.ts,
+agent/extensions/worklog.ts, agent/extensions/lib/, install.sh -- is original to
+this repository, MIT under LICENSE.

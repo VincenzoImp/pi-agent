@@ -1,0 +1,9 @@
+{
+  "name": "pi-agent-extensions",
+  "private": true,
+  "type": "module",
+  "description": "Dependencies for the extensions in this directory. Pi resolves imports from the node_modules next to the extension that needs them.",
+  "dependencies": {
+    "@anthropic-ai/sandbox-runtime": "0.0.75"
+  }
+}
