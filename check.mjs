@@ -80,10 +80,17 @@ for (const name of ["effects-guard.ts", "worklog.ts", "sandbox/index.ts", "plan-
 
 // The agreement is always in context; if it names a worklog path the extension does not use,
 // the model keeps its worklog where compaction re-injection never looks.
+// It must also be a path the model can RESOLVE. Pi exports no agent-directory variable into
+// bash (only PI_CODING_AGENT and PI_SUBAGENT_PARENT_SESSION), so an env-var path expands to
+// nothing and lands the worklog in /worklog/. Observed on a real session: the model gave up
+// and invented ./worklog/ in the cwd, where compaction re-injection never looks.
 const agreement = readFileSync(join(target, "AGENTS.md"), "utf8");
-expect(agreement.includes("$PI_CODING_AGENT_DIR/worklog/"),
+expect(agreement.includes("~/.pi/agent/worklog/"),
   "agreement names the worklog path the extension uses",
   "AGENTS.md worklog path does not match extensions/worklog.ts");
+expect(!/\$PI_[A-Z_]*(DIR|HOME)[^\s`]*\/worklog/.test(agreement),
+  "the worklog path resolves inside bash",
+  "AGENTS.md points the worklog at an env var bash never sets — it will expand to /worklog/");
 expect(!/arcwell/i.test(agreement), "agreement carries no stale references", "AGENTS.md still mentions arcwell");
 
 // Web access is a package, not a shell script here: a bash-based search is unreachable from
