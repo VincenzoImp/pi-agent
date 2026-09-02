@@ -4,7 +4,7 @@ argument-hint: "<what to build>"
 ---
 Take this work from where it is to done, without stopping to ask permission between legs: $@
 
-Open the worklog first (`/worklog`) and keep it current as you go. It is what survives
+Record decisions in memory (`memory_add`) as you take them. Memory is what survives
 compaction, so a decision that lives only in the conversation is a decision you will lose.
 
 **For work larger than one session, run this under `/goal`.** The two are different layers:
@@ -28,7 +28,7 @@ the route is a map, not a gate.
 3. **Plan** — when the route is not visible from here. Skip when charting would surface
    nothing you could not already state.
 4. **Implement** — the smallest coherent change, the style already in the codebase, a failing
-   test first for each behaviour change. Record what you did in the worklog as you do it.
+   test first for each behaviour change. Record what you did in memory as you do it.
 5. **Review** — write `git diff` from the commit you recorded before starting — never
    `HEAD~1` — to a file, and dispatch the `reviewer` agent at that path. The reviewer reads;
    it does not run git, so a diff you do not hand over is a diff it cannot see. Give it the
@@ -44,7 +44,7 @@ clean.
 Three rounds is the ceiling. If the third review still finds blocking issues, stop and report
 — three rounds of new problems is a signal about the approach, not about the fixes.
 
-Record each round in the worklog: what was found, what was changed, what the next review said.
+Record each round in memory: what was found, what was changed, what the next review said.
 After a compaction, that record is how you know which round you are on.
 
 ## Before you call it done

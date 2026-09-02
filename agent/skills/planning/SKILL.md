@@ -21,7 +21,7 @@ something belongs is answered against it.
 
 ## The map
 
-One file, owned by the worklog, holding the whole effort at low resolution:
+One file holding the whole effort at low resolution:
 
 ```markdown
 ## Destination

@@ -52,8 +52,8 @@ the terminal.
 ## Issue
 
 Open one when work outlives the session: a defect you found but are not fixing now, a decision
-that needs someone else, a follow-up the current change makes possible. An issue is where the
-worklog goes when it stops being yours alone.
+that needs someone else, a follow-up the current change makes possible. An issue is where a note
+goes when it stops being yours alone.
 
 `gh issue create` opens it, `gh issue list` finds what is already known — check that before
 writing a duplicate.

@@ -14,5 +14,5 @@ obvious — stop and say so. Then use `/autonomous` instead.
 3. Run the command that would prove the change wrong if it were wrong. Read the output.
 4. Report what you changed and what the command said.
 
-No worklog, no plan, no review round. Ceremony out of proportion to the work is a defect of
+No memory entry, no plan, no review round. Ceremony out of proportion to the work is a defect of
 its own, and this route exists because most changes are small.

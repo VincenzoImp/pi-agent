@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Use when work must continue in a session that does not have this one's context — a fresh agent, a colleague, or yourself tomorrow. Writes a document that resumes the work rather than describing it. Skip it when the worklog already holds the state and the next session is the same session after a compaction.
+description: Use when work must continue in a session that does not have this one's context — a fresh agent, a colleague, or yourself tomorrow. Writes a document that resumes the work rather than describing it. Skip it when memory already holds the state and the next session is the same session after a compaction.
 ---
 
 # Handoff
@@ -22,7 +22,7 @@ do next.
 ## What stays out
 
 Anything already captured in an artifact. Specs, plans, ADRs, issues, commits, diffs and
-the worklog are referenced by path or URL, never restated — a copy goes stale the moment
+memory are referenced by path or URL, never restated — a copy goes stale the moment
 the original moves, and the next session then has two versions and no way to tell which is
 current.
 

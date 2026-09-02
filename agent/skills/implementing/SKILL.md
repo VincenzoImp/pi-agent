@@ -68,7 +68,7 @@ Follow the code standard in the working agreement: the style already in the code
 the smallest coherent change, nothing left behind.
 
 Run typechecking and the tests covering your change as you go; the full suite once at the
-end. Record what you did in the worklog as you do it, not afterwards from memory.
+end. Record what you did as you do it, not afterwards from recollection.
 
 When the task turns out to be wrong — the interface does not exist, the approach cannot
 work, the requirement contradicts another — stop and say so. Implementing around a broken

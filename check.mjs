@@ -123,6 +123,30 @@ expect(!/worklog/i.test(agreement),
   "agreement carries no stale worklog references",
   "AGENTS.md still refers to the removed worklog extension");
 
+// Prose that names something removed is an instruction the model cannot follow, and it is the
+// defect this project has shipped most often: the worklog path, the `web` skill, an arcwell
+// directory. AGENTS.md alone was checked, and eleven references survived in the skills and
+// prompts. Everything shipped as prose is scanned now.
+const removed = ["worklog", "effects-guard", "arcwell", "brave-search", "search.sh", "fetch.sh"];
+const proseFiles = [
+  join(repo, "agent", "AGENTS.md"),
+  ...readdirSync(join(repo, "agent", "skills"))
+    .filter((name) => statSync(join(repo, "agent", "skills", name)).isDirectory())
+    .map((name) => join(repo, "agent", "skills", name, "SKILL.md")),
+  ...readdirSync(join(repo, "agent", "prompts")).map((f) => join(repo, "agent", "prompts", f)),
+  join(repo, "agent", "agents", "planner.md"),
+];
+const stale = [];
+for (const file of proseFiles) {
+  const text = readFileSync(file, "utf8");
+  for (const word of removed) {
+    if (text.toLowerCase().includes(word.toLowerCase())) stale.push(`${file.slice(repo.length + 1)} → ${word}`);
+  }
+}
+expect(stale.length === 0,
+  "no shipped prose names something that was removed",
+  `prose still names removed things: ${stale.join(", ")}`);
+
 // The agreement is always in context, so a skill it names that no longer exists is an
 // instruction the model cannot follow. Removing the bundled `web` skill left exactly that
 // behind, and every other check still passed.

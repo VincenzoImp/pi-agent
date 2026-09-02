@@ -104,5 +104,5 @@ Conversation memory is lost at compaction. Controllers that lost their place hav
 re-dispatched entire completed task sequences — the most expensive failure this skill
 knows about.
 
-Write each completed task to the worklog as it completes, with the commit range. After a
-compaction or a resume, trust the worklog and `git log` over your own recollection.
+Record each completed task in memory as it completes, with the commit range. After a
+compaction or a resume, trust memory and `git log` over your own recollection.
