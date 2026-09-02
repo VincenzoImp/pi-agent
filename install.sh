@@ -127,6 +127,25 @@ if (settings.defaultPlanTools === undefined) {
 }
 PLAN
 
+# cc-safety-net blocks what destroys local work; it does not stop what publishes. Verified on a
+# real machine: `git push` ran with no confirmation at all. A rulebook adds those blocks back —
+# rulebooks can only ADD, never weaken the built-in protection. This writes outside the agent
+# directory, into the tool's own config, and never overwrites a rulebook you already have.
+
+rulebook_dir="$HOME/.cc-safety-net/rules/pi-agent-remote-effects"
+if [ "$skip_packages" -eq 0 ] && [ ! -f "$rulebook_dir/rulebook.json" ]; then
+  mkdir -p "$rulebook_dir"
+  cp "$here/rulebook.json" "$rulebook_dir/rulebook.json"
+  if npx -y cc-safety-net rule add pi-agent-remote-effects --global >/dev/null 2>&1; then
+    say "registered the remote-effects rulebook (push, publish, release need you)"
+  else
+    say "note: could not register the remote-effects rulebook; run"
+    say "      npx -y cc-safety-net rule add pi-agent-remote-effects --global"
+  fi
+elif [ -f "$rulebook_dir/rulebook.json" ]; then
+  say "remote-effects rulebook already present; left alone"
+fi
+
 # --- 6. Optional: Claude on a subscription -----------------------------------------------------
 # pi-claude-bridge runs Claude through Anthropic's own Agent SDK, and bills against a Pro/Max
 # plan the way Claude Code does. It replaces pi-claude-cli, which spawns the `claude` binary

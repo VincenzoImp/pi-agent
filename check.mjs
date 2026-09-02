@@ -94,6 +94,14 @@ for (const [name, role] of [
     `packages.txt no longer installs ${name} — the setup has no ${role}`);
 }
 
+// cc-safety-net does not stop a plain `git push`; a rulebook adds that back. Verified by
+// running the push before and after: it went through with no confirmation, then was refused
+// by rule pi-agent-remote-effects/remote-git-push before execution.
+const rulebook = join(homedir(), ".cc-safety-net", "rules", "pi-agent-remote-effects", "rulebook.json");
+expect(existsSync(rulebook),
+  "remote effects need a human",
+  "the remote-effects rulebook is not installed — `git push` and `npm publish` run unattended");
+
 // Plan mode's own default is `read` alone, which leaves the agent unable to look at anything.
 try {
   const plan = JSON.parse(readFileSync(join(target, "pi-plan-mode.json"), "utf8"));

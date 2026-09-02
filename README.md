@@ -53,6 +53,9 @@ packages rather than files here — they are maintained by people who do only th
 - **`cc-safety-net`** inspects every command before it runs and blocks destructive ones and
   reads of recognised secret paths. Verified on a real machine: a `cat ~/.aws/notes.txt` came
   back refused by rule `secret.home.aws`, before execution and regardless of the command used.
+  It stops what destroys local work but not what publishes, so [`rulebook.json`](rulebook.json)
+  adds `git push`, `npm publish`, `docker push` and `gh release create` — those stay yours to
+  run. A rulebook can only add blocks; it cannot weaken the built-in ones.
 - **`pi-sandbox`** confines the `bash` *process* at the operating system — `sandbox-exec` on
   macOS, `bubblewrap` on Linux — and asks for permission interactively when something wants
   out. `/sandbox` shows the current policy, `/sandbox-allow` widens it for a session.
@@ -113,7 +116,9 @@ stays installed until `./uninstall.sh && ./install.sh`.
 
 **Claude Pro/Max** — `./install.sh --claude` installs `pi-claude-bridge`, which runs Claude
 through Anthropic's own Agent SDK and bills against your plan the way Claude Code does. Select
-it with `/model` (`claude-bridge/claude-opus-5` and the rest).
+it with `/model` (`claude-bridge/claude-opus-5` and the rest). On a Max plan, set
+`{"provider": {"plan": "max"}}` in `~/.pi/agent/claude-bridge.json` to unlock the 1M context
+window on Opus.
 
 **Local models** (Ollama, llama.cpp, vLLM) — write `~/.pi/agent/models.json` once:
 

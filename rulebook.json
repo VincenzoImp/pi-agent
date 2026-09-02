@@ -1,0 +1,73 @@
+{
+  "rulebook_version": 1,
+  "name": "pi-agent-remote-effects",
+  "version": "1.0.0",
+  "description": "Effects that leave this machine are the human's to authorise. cc-safety-net already stops what destroys local work; this stops what publishes. Both are irreversible, but only one is irreversible for other people too.",
+  "author": "pi-agent",
+  "allowed_commands": [
+    "git",
+    "npm",
+    "docker",
+    "gh"
+  ],
+  "rules": [
+    {
+      "name": "remote-git-push",
+      "command": "git",
+      "match": {
+        "command_path": [
+          "push"
+        ]
+      },
+      "reason": "Pushing publishes commits to a remote others pull from. Read the diff, then run it yourself.",
+      "intent": "manual_only",
+      "block_args": [
+        "push"
+      ]
+    },
+    {
+      "name": "remote-npm-publish",
+      "command": "npm",
+      "match": {
+        "command_path": [
+          "publish"
+        ]
+      },
+      "reason": "Publishing to a registry cannot be undone; the version number is spent even after an unpublish.",
+      "intent": "manual_only",
+      "block_args": [
+        "publish"
+      ]
+    },
+    {
+      "name": "remote-docker-push",
+      "command": "docker",
+      "match": {
+        "command_path": [
+          "push"
+        ]
+      },
+      "reason": "Pushing an image publishes it to a registry others pull from.",
+      "intent": "manual_only",
+      "block_args": [
+        "push"
+      ]
+    },
+    {
+      "name": "remote-gh-release",
+      "command": "gh",
+      "match": {
+        "command_path": [
+          "release",
+          "create"
+        ]
+      },
+      "reason": "Creating a release publishes artifacts and notifies watchers.",
+      "intent": "manual_only",
+      "block_args": [
+        "release",
+        "create"
+      ]
+    }
+  ]
+}
