@@ -86,12 +86,13 @@ expect(agreement.includes("$PI_CODING_AGENT_DIR/worklog/"),
   "AGENTS.md worklog path does not match extensions/worklog.ts");
 expect(!/arcwell/i.test(agreement), "agreement carries no stale references", "AGENTS.md still mentions arcwell");
 
-// A tarball or a bad copy strips the execute bit, and the web skill fails only when used.
-for (const script of ["search.sh", "fetch.sh"]) {
-  const path = join(target, "skills", "web", script);
-  expect(existsSync(path) && (statSync(path).mode & 0o111) !== 0,
-    `executable: skills/web/${script}`, `not executable: skills/web/${script}`);
-}
+// Web access is a package, not a shell script here: a bash-based search is unreachable from
+// inside the sandbox (its allowlist is npm/PyPI/GitHub), which reads as "search is broken".
+// Measured on a real host: DuckDuckGo's keyless endpoint bot-refused 5 of 5 queries.
+const packages = readFileSync(join(repo, "packages.txt"), "utf8");
+expect(packages.includes("pi-web-access"),
+  "web access ships as a package",
+  "packages.txt no longer installs pi-web-access — the setup has no web search");
 
 // Without this settings key the agreement reaches the model but none of its subagents.
 try {

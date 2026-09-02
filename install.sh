@@ -67,7 +67,6 @@ fi
 # repo therefore also stays until you remove it by hand — the README says so.
 
 for entry in "${entries[@]}"; do cp -R "$here/agent/$entry" "$target/"; done
-chmod +x "$target"/skills/web/*.sh 2>/dev/null || true
 say "copied: ${entries[*]}"
 
 # --- 4. Extension dependencies (the sandbox runtime; lockfile committed, so builds repeat) ------
@@ -161,5 +160,4 @@ Verify the install anytime:  ./check.sh
 
 The sandbox contains bash at the OS. On Linux it needs:
   sudo apt install bubblewrap socat ripgrep
-The web skill needs BRAVE_API_KEY (or PI_SEARX_URL) in your environment.
 DONE

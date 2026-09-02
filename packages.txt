@@ -10,3 +10,4 @@ npm:pi-subagents@0.62.0                 # delegation: background, parallel, chai
 npm:@narumitw/pi-goal@0.54.4            # /goal — budgets, no-progress guard, evidence
 npm:@narumitw/pi-statusline@0.50.0      # informative footer: model, tokens, git, cost
 npm:@narumitw/pi-usage@0.60.2           # /usage — account limits and consumption
+npm:pi-web-access@0.27.0                # web_search and fetch_content; no API key needed
