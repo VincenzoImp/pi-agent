@@ -1,3 +1,2 @@
-# The extensions' dependencies are installed by install.sh, not committed.
+# Installed by install.sh; the lockfile IS committed so the same bytes install everywhere.
 agent/extensions/node_modules/
-agent/extensions/package-lock.json

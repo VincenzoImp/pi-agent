@@ -1,0 +1,12 @@
+# Pi packages this setup installs, one exact source per line.
+# install.sh feeds each to `pi install`, which is idempotent and records it in
+# ~/.pi/agent/settings.json — Pi's own registry, never overwritten by this repo.
+
+npm:@spences10/pi-lsp@0.0.46            # diagnostics and code navigation (LSP)
+npm:@spences10/pi-context@0.1.16        # oversized tool output goes to a sidecar, not context
+npm:@spences10/pi-mcp@0.0.60            # MCP client; no servers configured here
+npm:@spences10/pi-redact@0.0.15         # credential-pattern redaction
+npm:pi-subagents@0.62.0                 # delegation: background, parallel, chains
+npm:@narumitw/pi-goal@0.54.4            # /goal — budgets, no-progress guard, evidence
+npm:@narumitw/pi-statusline@0.50.0      # informative footer: model, tokens, git, cost
+npm:@narumitw/pi-usage@0.60.2           # /usage — account limits and consumption

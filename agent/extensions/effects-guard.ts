@@ -255,6 +255,6 @@ export function registerProtectionHandlers(pi: Pick<ExtensionAPI, "on">, config:
   pi.on("user_bash", (event, ctx) => handlers.userBash(event, ctx));
 }
 
-export default function arcwellProtections(pi: ExtensionAPI): void {
+export default function effectsGuard(pi: ExtensionAPI): void {
   registerProtectionHandlers(pi, readGlobalConfig());
 }

@@ -2,107 +2,164 @@
 #
 # Installs this setup into ~/.pi/agent.
 #
-# It copies; it never deletes. Sessions, credentials, trust decisions and downloaded packages
-# belong to Pi and are not touched. Anything it is about to overwrite is backed up first, dated,
-# so a second run is safe and so is a first run on a machine that already has a setup.
+# It copies content and asks Pi to install packages; it never deletes and never overwrites
+# Pi's own state. settings.json in particular is Pi's registry, not this repo's: packages are
+# added through `pi install` (idempotent), and the one key this setup needs is merged only if
+# you have not already set it. Your provider, model, theme and trust choices survive re-runs.
 #
-#   ./install.sh                 install into ~/.pi/agent
-#   PI_AGENT_DIR=/tmp/x ./install.sh   install somewhere else
-#   ./install.sh --no-packages   skip the npm installs, for a quick content-only update
+# Anything about to be overwritten is first archived to ~/.pi/agent/.backups/<date>.tar.gz.
+#
+#   ./install.sh                     install into ~/.pi/agent
+#   ./install.sh --claude            also set up Claude on a Pro/Max subscription
+#   ./install.sh --no-packages      content only; skip every npm/pi install
+#   PI_AGENT_DIR=/tmp/x ./install.sh install somewhere else
 
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 target="${PI_AGENT_DIR:-${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}}"
 stamp="$(date +%Y%m%d-%H%M%S)"
-backup="$target/.backup-$stamp"
-skip_packages=0
-[ "${1:-}" = "--no-packages" ] && skip_packages=1
+entries=(AGENTS.md presets.json skills prompts agents themes extensions)
 
-# Everything Pi owns. Named here so the reader can see exactly what is out of bounds.
-readonly PI_STATE="sessions auth.json trust.json models-store.json npm git context.db"
+skip_packages=0; want_claude=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-packages) skip_packages=1 ;;
+    --claude) want_claude=1 ;;
+    *) echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
 
 say() { printf '  %s\n' "$*"; }
 
-# --- 1. Pi has to be there, and be the version this setup was verified against -----------------
+# --- 1. Pi must be present, at the version this setup was verified against ---------------------
 
 if ! command -v pi >/dev/null 2>&1; then
   echo "pi is not on PATH. Install it first:" >&2
   echo "  npm install -g @earendil-works/pi-coding-agent@0.84.4" >&2
   exit 1
 fi
-
 want="0.84.4"
 have="$(pi --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
-if [ "$have" != "$want" ]; then
+if [ "$have" != "$want" ] && [ "${PI_AGENT_SKIP_VERSION_CHECK:-}" != "1" ]; then
   echo "This setup was verified against Pi $want; you have ${have:-an unreadable version}." >&2
   echo "Continue anyway with: PI_AGENT_SKIP_VERSION_CHECK=1 ./install.sh" >&2
-  [ "${PI_AGENT_SKIP_VERSION_CHECK:-}" = "1" ] || exit 1
+  exit 1
 fi
 
 echo "Installing into $target"
-
-# --- 2. Back up whatever would be overwritten --------------------------------------------------
-
 mkdir -p "$target"
-for entry in AGENTS.md settings.json presets.json skills prompts agents themes extensions; do
-  if [ -e "$target/$entry" ]; then
-    mkdir -p "$backup"
-    cp -R "$target/$entry" "$backup/"
-  fi
-done
-if [ -d "$backup" ]; then
-  say "backed up existing files to $backup"
+
+# --- 2. Archive whatever is about to be overwritten --------------------------------------------
+# One tar per run, node_modules excluded: backups stay small and never pile up as directories.
+
+existing=()
+for entry in "${entries[@]}"; do [ -e "$target/$entry" ] && existing+=("$entry"); done
+if [ "${#existing[@]}" -gt 0 ]; then
+  mkdir -p "$target/.backups"
+  tar czf "$target/.backups/$stamp.tar.gz" -C "$target" \
+    --exclude "extensions/node_modules" "${existing[@]}"
+  say "archived ${existing[*]} to .backups/$stamp.tar.gz"
 fi
 
 # --- 3. Copy the content -----------------------------------------------------------------------
+# Copy merges and never deletes: a file you added in the target stays. A skill removed from the
+# repo therefore also stays until you remove it by hand — the README says so.
 
-# -R over the directory contents, so nothing outside these names is considered, let alone removed.
-for entry in AGENTS.md settings.json presets.json skills prompts agents themes extensions; do
-  cp -R "$here/agent/$entry" "$target/"
-done
+for entry in "${entries[@]}"; do cp -R "$here/agent/$entry" "$target/"; done
 chmod +x "$target"/skills/web/*.sh 2>/dev/null || true
-say "copied skills, prompts, agents, extensions, themes, agreement, settings"
+say "copied: ${entries[*]}"
 
-# Prove the promise rather than assert it: Pi's own state must still be there.
-for entry in $PI_STATE; do
-  [ -e "$target/$entry" ] && say "left untouched: $entry"
-done || true
-
-# --- 4. Extension dependencies -----------------------------------------------------------------
+# --- 4. Extension dependencies (the sandbox runtime; lockfile committed, so builds repeat) ------
 
 if [ "$skip_packages" -eq 0 ]; then
   ( cd "$target/extensions" && npm install --silent --no-audit --no-fund )
-  say "installed extension dependencies (the sandbox runtime)"
+  say "installed extension dependencies"
 fi
 
-# --- 5. Pi packages ----------------------------------------------------------------------------
-# settings.json already lists them, but user-scoped packages are not fetched until asked.
+# --- 5. Pi packages, through Pi itself ---------------------------------------------------------
 
 if [ "$skip_packages" -eq 0 ]; then
-  packages="$(node -e 'const s=require(process.argv[1]);console.log((s.packages||[]).join("\n"))' "$here/agent/settings.json")"
-  while IFS= read -r package; do
+  grep -Ev '^\s*(#|$)' "$here/packages.txt" | while IFS= read -r line; do
+    package="${line%%#*}"; package="$(echo "$package" | xargs)"
     [ -z "$package" ] && continue
     PI_CODING_AGENT_DIR="$target" pi install "$package" >/dev/null
-    say "installed $package"
-  done <<< "$packages"
+    say "pi install $package"
+  done
 fi
 
-# --- 6. What to do next ------------------------------------------------------------------------
+# --- 6. The one settings key this setup needs, merged and never overwritten --------------------
+# pi-subagents' builtins do not inherit the global AGENTS.md unless told to; without this the
+# working agreement reaches the main model but none of the subagents it dispatches.
+
+node - "$target/settings.json" <<'MERGE'
+const fs = require("node:fs");
+const path = process.argv[2];
+const settings = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : {};
+settings.subagents ??= {};
+settings.subagents.agentOverrides ??= {};
+let changed = false;
+for (const agent of ["planner", "reviewer", "scout", "worker"]) {
+  const current = settings.subagents.agentOverrides[agent] ?? {};
+  if (current.inheritGlobalContext === undefined) {
+    settings.subagents.agentOverrides[agent] = { ...current, inheritGlobalContext: true };
+    changed = true;
+  }
+}
+if (changed) fs.writeFileSync(path, JSON.stringify(settings, null, 2) + "\n");
+console.log(changed ? "  merged subagent overrides into settings.json"
+                    : "  subagent overrides already present");
+MERGE
+
+# --- 7. Optional: Claude on a subscription -----------------------------------------------------
+# The adapter routes Anthropic through the Claude CLI so a Pro/Max login bills against the plan.
+# At 0.3.1 it passes a file PATH to a flag that takes TEXT, silently losing the whole system
+# prompt; until rchern/pi-claude-cli#39 lands, the one-word fix is applied here, idempotently.
+
+if [ "$want_claude" -eq 1 ]; then
+  PI_CODING_AGENT_DIR="$target" pi install "npm:pi-claude-cli@0.3.1" >/dev/null
+  say "pi install npm:pi-claude-cli@0.3.1"
+  node - "$target" <<'CLAUDE'
+const fs = require("node:fs");
+const path = require("node:path");
+const target = process.argv[2];
+const pm = path.join(target, "npm/node_modules/pi-claude-cli/src/process-manager.ts");
+const src = fs.readFileSync(pm, "utf8");
+const broken = 'args.push("--append-system-prompt", tmpFile);';
+if (src.includes(broken)) {
+  fs.writeFileSync(pm, src.replace(broken, 'args.push("--append-system-prompt-file", tmpFile);'));
+  console.log("  patched the adapter's system-prompt flag (see rchern/pi-claude-cli#39)");
+} else {
+  console.log("  adapter flag already correct");
+}
+const sp = path.join(target, "settings.json");
+const settings = JSON.parse(fs.readFileSync(sp, "utf8"));
+if (!settings.defaultProvider) {
+  settings.defaultProvider = "pi-claude-cli";
+  settings.defaultModel ??= "claude-opus-4-5";
+  fs.writeFileSync(sp, JSON.stringify(settings, null, 2) + "\n");
+  console.log("  defaultProvider set to pi-claude-cli");
+} else {
+  console.log(`  defaultProvider is already ${settings.defaultProvider}; left alone`);
+}
+CLAUDE
+  say "note: a 'pi update' will undo the adapter patch; re-run ./install.sh --claude after updating"
+fi
+
+# --- 8. What to do next ------------------------------------------------------------------------
 
 cat <<'DONE'
 
 Done. Next:
 
-  pi                          start it
-  /login                      authenticate a provider
-  /theme quiet-dark           if you want the theme
-  /statusline                 configure the footer
-  /usage                      what your account has left
+  pi                    start it
+  /login                authenticate a provider
+  /theme quiet-dark     the bundled theme
+  /usage                what your account has left
 
-The sandbox contains bash at the OS. On Linux it needs bwrap, socat and rg:
+Verify the install anytime:  ./check.sh
+
+The sandbox contains bash at the OS. On Linux it needs:
   sudo apt install bubblewrap socat ripgrep
-
-Configure it in extensions/sandbox.json, and the effects guard in
-extensions/effects-guard.json. Both work without any config at all.
+The web skill needs BRAVE_API_KEY (or PI_SEARX_URL) in your environment.
 DONE

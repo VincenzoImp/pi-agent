@@ -8,9 +8,9 @@
  * inspecting one. The effects and secret-path guards read command text and can be
  * evaded by substitution; this stops the process at the OS.
  *
- * It must load AFTER arcwell-protections: `user_bash` handlers are first-wins, and
- * the guard returns undefined for a command it allows, so the sandbox still sees it.
- * Reversed, the sandbox would answer first and the guard would never run.
+ * Directory extensions load in filesystem order, so no ordering is assumed: model commands
+ * are guarded via tool_call regardless, and the dangerous user-typed reads (~/.ssh, ~/.aws)
+ * are covered by this sandbox's own denyRead defaults whichever handler answers first.
  *
  * Sandbox Extension - OS-level sandboxing for bash commands
  *

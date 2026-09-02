@@ -1,0 +1,42 @@
+name: Check
+
+# The full path a new machine takes: install Pi, run install.sh, verify everything loads —
+# including the three extensions (guard, worklog, sandbox) a broken copy loses silently.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-and-check:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install Pi
+        run: npm install -g @earendil-works/pi-coding-agent@0.84.4
+      - name: Install the setup into a scratch agent dir
+        run: PI_AGENT_DIR="$RUNNER_TEMP/agent" ./install.sh
+      - name: Install it again, proving idempotency
+        run: PI_AGENT_DIR="$RUNNER_TEMP/agent" ./install.sh
+      - name: Verify everything loads
+        run: PI_AGENT_DIR="$RUNNER_TEMP/agent" ./check.sh
+      - name: Uninstall and verify state survives
+        run: |
+          touch "$RUNNER_TEMP/agent/auth.json"
+          PI_AGENT_DIR="$RUNNER_TEMP/agent" ./uninstall.sh
+          test -f "$RUNNER_TEMP/agent/auth.json"
+          test ! -d "$RUNNER_TEMP/agent/skills"

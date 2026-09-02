@@ -79,7 +79,7 @@ commented-out block, no shim for a caller that no longer exists.
 - MCP servers are not connected at startup. If a capability still seems missing — a browser,
   a database — check `/mcp` before concluding you cannot do it.
 - Track work in progress with the todo tool. Durable state — the goal, decisions taken, work
-  still open — belongs in the worklog: `$PI_CODING_AGENT_DIR/arcwell/worklog/<session>.md`,
+  still open — belongs in the worklog: `$PI_CODING_AGENT_DIR/worklog/<session>.md`,
   an ordinary file you read and write, and `/worklog` opens it. It is the one thing that
   survives compaction intact, so what is only in the conversation is what gets lost.
 - Plans go where the project already keeps them; otherwise keep them in the conversation.
