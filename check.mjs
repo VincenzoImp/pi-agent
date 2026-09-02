@@ -91,6 +91,16 @@ expect(agreement.includes("~/.pi/agent/worklog/"),
 expect(!/\$PI_[A-Z_]*(DIR|HOME)[^\s`]*\/worklog/.test(agreement),
   "the worklog path resolves inside bash",
   "AGENTS.md points the worklog at an env var bash never sets — it will expand to /worklog/");
+
+// The agreement is always in context, so a skill it names that no longer exists is an
+// instruction the model cannot follow. Removing the bundled `web` skill left exactly that
+// behind, and every other check still passed.
+const namedSkills = [...agreement.matchAll(/`([a-z][a-z-]*)` skill/g)].map((match) => match[1]);
+for (const name of namedSkills) {
+  expect(loadedSkills.has(name),
+    `agreement names a skill that exists: ${name}`,
+    `AGENTS.md tells the model to use the \`${name}\` skill, which is not installed`);
+}
 expect(!/arcwell/i.test(agreement), "agreement carries no stale references", "AGENTS.md still mentions arcwell");
 
 // Web access is a package, not a shell script here: a bash-based search is unreachable from

@@ -24,6 +24,8 @@ Modified, and how:
   agent/extensions/plan-mode/index.ts
       registers /plan-todos instead of /todos, because todo.ts owns /todos
       and the second registration would shadow it
+      its injected plan-mode prompt points at the web_search tool instead of a
+      "brave-search skill", which no version of this setup has ever installed
 
 sandbox/index.ts is the only one with a dependency of its own,
 @anthropic-ai/sandbox-runtime (Apache-2.0, Anthropic), declared in

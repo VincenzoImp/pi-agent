@@ -74,8 +74,10 @@ commented-out block, no shim for a caller that no longer exists.
 - Prefer dedicated tools, focused searches and LSP navigation over flooding context with
   shell output. `cat`, `sed -n Np` and `grep` through `bash` are refused outright; use the
   `read` and `grep` tools.
-- For anything on the web, use the `web` skill rather than improvising a `curl`: it handles
-  redirects, entities and non-HTML, and it reports failures instead of returning nothing.
+- For anything on the web, use the `web_search` and `fetch_content` tools rather than
+  improvising a `curl`. They handle redirects, entities and non-HTML, and they report failures
+  instead of returning nothing — and `bash` cannot reach the open web anyway: the sandbox
+  allows only npm, PyPI and GitHub.
 - MCP servers are not connected at startup. If a capability still seems missing — a browser,
   a database — check `/mcp` before concluding you cannot do it.
 - Track work in progress with the todo tool. Durable state — the goal, decisions taken, work

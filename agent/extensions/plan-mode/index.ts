@@ -215,7 +215,7 @@ Restrictions:
 - Bash is restricted to an allowlist of read-only commands
 
 Ask clarifying questions using the questionnaire tool.
-Use brave-search skill via bash for web research.
+Use the web_search tool for web research.
 
 Create a detailed numbered plan under a "Plan:" header:
 
