@@ -125,20 +125,22 @@ try {
 // The Claude adapter, when installed, must pass the system prompt as a FILE flag. 0.3.1 hands
 // a path to a literal-text flag, so the agreement and every skill silently never reach the
 // model (rchern/pi-claude-cli#39) — and a `pi update` reverts the fix. This keeps the loss loud.
-const adapter = join(target, "npm", "node_modules", "pi-claude-cli", "src", "process-manager.ts");
-if (existsSync(adapter)) {
-  expect(readFileSync(adapter, "utf8").includes("--append-system-prompt-file"),
-    "claude adapter delivers the system prompt as a file",
-    "claude adapter is UNPATCHED — the system prompt is being lost; run ./install.sh --claude");
+// Published pi-claude-cli 0.3.1 loses the system prompt entirely, and drops the user's
+// question whenever an extension appends a message after it (plan mode does). Both fail
+// silently, so the loud check is that the npm build is not what got installed.
+const npmAdapter = join(target, "npm", "node_modules", "pi-claude-cli");
+const forkAdapter = join(target, "git", "github.com", "VincenzoImp", "pi-claude-cli");
+if (existsSync(npmAdapter) || existsSync(forkAdapter)) {
+  expect(existsSync(forkAdapter) && !existsSync(npmAdapter),
+    "claude adapter is the fixed fork",
+    "claude adapter is the unfixed npm build — the system prompt is lost and plan mode " +
+    "returns empty answers; run ./install.sh --claude");
 }
-
-// The same adapter drops the human's question whenever an extension appends a user message
-// after it, which is exactly what plan mode does. Observed as three empty assistant turns.
-const promptBuilder = join(target, "npm", "node_modules", "pi-claude-cli", "src", "prompt-builder.ts");
-if (existsSync(promptBuilder)) {
-  expect(/role === "toolResult" \|\| messages\[i\]\.role === "user"/.test(readFileSync(promptBuilder, "utf8")),
-    "claude adapter keeps the user's question in plan mode",
-    "claude adapter is UNPATCHED — plan mode will return empty answers; run ./install.sh --claude");
+if (existsSync(forkAdapter)) {
+  const source = readFileSync(join(forkAdapter, "src", "prompt-builder.ts"), "utf8");
+  expect(/role === "toolResult" \|\| messages\[i\]\.role === "user"/.test(source),
+    "the fork carries the resume-prompt fix",
+    "the installed fork predates the plan-mode fix; re-run ./install.sh --claude");
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

@@ -20,6 +20,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 target="${PI_AGENT_DIR:-${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}}"
 stamp="$(date +%Y%m%d-%H%M%S)"
 entries=(AGENTS.md presets.json skills prompts agents themes extensions)
+# Our fork of pi-claude-cli, pinned to a tag. See section 7 for why it is not the npm package.
+CLAUDE_ADAPTER="git:github.com/VincenzoImp/pi-claude-cli@v0.3.1-pi-agent.1"
 
 skip_packages=0; want_claude=0
 for arg in "$@"; do
@@ -112,40 +114,21 @@ MERGE
 
 # --- 7. Optional: Claude on a subscription -----------------------------------------------------
 # The adapter routes Anthropic through the Claude CLI so a Pro/Max login bills against the plan.
-# At 0.3.1 it passes a file PATH to a flag that takes TEXT, silently losing the whole system
-# prompt; until rchern/pi-claude-cli#39 lands, the one-word fix is applied here, idempotently.
+# Published 0.3.1 has two defects that both fail silently: it hands a file path to a flag that
+# takes literal text, losing the entire system prompt, and its resume prompt drops the user's
+# question whenever an extension appends a message after it, which is what plan mode does.
+#
+# Both are fixed in a pinned tag of our fork rather than by editing node_modules, because a
+# `pi update` reinstalls the package and would revert any edit — silently, again. Upstream has
+# the first as PR #39; the fork carries both.
 
 if [ "$want_claude" -eq 1 ]; then
-  PI_CODING_AGENT_DIR="$target" pi install "npm:pi-claude-cli@0.3.1" >/dev/null
-  say "pi install npm:pi-claude-cli@0.3.1"
+  PI_CODING_AGENT_DIR="$target" pi install "$CLAUDE_ADAPTER" >/dev/null
+  say "pi install $CLAUDE_ADAPTER"
   node - "$target" <<'CLAUDE'
 const fs = require("node:fs");
 const path = require("node:path");
 const target = process.argv[2];
-const pm = path.join(target, "npm/node_modules/pi-claude-cli/src/process-manager.ts");
-const src = fs.readFileSync(pm, "utf8");
-const broken = 'args.push("--append-system-prompt", tmpFile);';
-if (src.includes(broken)) {
-  fs.writeFileSync(pm, src.replace(broken, 'args.push("--append-system-prompt-file", tmpFile);'));
-  console.log("  patched the adapter's system-prompt flag (see rchern/pi-claude-cli#39)");
-} else {
-  console.log("  adapter flag already correct");
-}
-
-// Second adapter defect: buildResumePrompt starts at the last user message and walks back
-// over toolResult messages only. Plan mode appends its "[PLAN MODE ACTIVE]" preamble as a
-// user message, so the prompt became the preamble alone and the human's question was
-// dropped — the model answered with nothing at all.
-const pb = path.join(target, "npm/node_modules/pi-claude-cli/src/prompt-builder.ts");
-const pbSrc = fs.readFileSync(pb, "utf8");
-const narrow = 'if (messages[i].role === "toolResult") {\n      startIdx = i;';
-if (pbSrc.includes(narrow)) {
-  fs.writeFileSync(pb, pbSrc.replace(narrow,
-    'if (messages[i].role === "toolResult" || messages[i].role === "user") {\n      startIdx = i;'));
-  console.log("  patched the adapter's resume-prompt walk (plan mode lost the user's question)");
-} else {
-  console.log("  adapter resume-prompt walk already correct");
-}
 const sp = path.join(target, "settings.json");
 const settings = JSON.parse(fs.readFileSync(sp, "utf8"));
 if (!settings.defaultProvider) {
@@ -157,7 +140,6 @@ if (!settings.defaultProvider) {
   console.log(`  defaultProvider is already ${settings.defaultProvider}; left alone`);
 }
 CLAUDE
-  say "note: a 'pi update' will undo the adapter patch; re-run ./install.sh --claude after updating"
 fi
 
 # --- 8. What to do next ------------------------------------------------------------------------

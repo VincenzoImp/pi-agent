@@ -111,10 +111,14 @@ stays installed until `./uninstall.sh && ./install.sh`.
 
 ## Providers
 
-**Claude Pro/Max** — `./install.sh --claude` installs the CLI adapter and applies a one-word fix
-for a bug that otherwise discards the entire system prompt
-([rchern/pi-claude-cli#39](https://github.com/rchern/pi-claude-cli/pull/39)). A `pi update`
-reverts the patch, so re-run the flag afterwards; `./check.sh` will tell you if it is missing.
+**Claude Pro/Max** — `./install.sh --claude` installs the CLI adapter, which routes Anthropic
+through the Claude CLI so the usage bills against your plan. It installs
+[a pinned fork](https://github.com/VincenzoImp/pi-claude-cli/tree/v0.3.1-pi-agent.1) rather
+than the published 0.3.1, which has two defects that both fail silently: it hands a file path
+to a flag that takes literal text, so the entire system prompt is discarded
+([upstream PR #39](https://github.com/rchern/pi-claude-cli/pull/39)), and its resume prompt
+drops your question whenever an extension appends a message after it — which is what plan mode
+does, so plan mode answers nothing at all. The fork carries both fixes with tests.
 
 **Local models** (Ollama, llama.cpp, vLLM) — write `~/.pi/agent/models.json` once:
 
