@@ -94,6 +94,17 @@ for (const [name, role] of [
     `packages.txt no longer installs ${name} — the setup has no ${role}`);
 }
 
+// Plan mode's own default is `read` alone, which leaves the agent unable to look at anything.
+try {
+  const plan = JSON.parse(readFileSync(join(target, "pi-plan-mode.json"), "utf8"));
+  const tools = plan.defaultPlanTools ?? [];
+  expect(["grep", "find", "ls"].every((tool) => tools.includes(tool)),
+    "plan mode can explore",
+    `pi-plan-mode.json allows only [${tools.join(", ")}] — the agent cannot inspect anything`);
+} catch {
+  bad("pi-plan-mode.json is missing or unreadable — run ./install.sh");
+}
+
 // The agreement is always in context, so it must name the memory tools that actually exist.
 // It previously described a worklog file the model could not resolve, and the model invented
 // its own location; the compaction re-injection then read an empty directory.

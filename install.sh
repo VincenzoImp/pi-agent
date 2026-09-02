@@ -107,6 +107,26 @@ console.log(changed ? "  merged subagent overrides into settings.json"
                     : "  subagent overrides already present");
 MERGE
 
+# Plan mode ships with `read` as its only allowed tool, which leaves the agent unable to look
+# at anything: observed on a real session, it reported "bash is blocked and there's no glob or
+# grep tool available" and had to ask blind. These four let it explore. `bash` is included
+# deliberately — with it in the policy the extension applies its own read-only shell limit, and
+# pi-sandbox and cc-safety-net sit underneath either way. safeSubcommands is left unset on
+# purpose: a match there bypasses both limited-shell policies completely.
+
+node - "$target/pi-plan-mode.json" <<'PLAN'
+const fs = require("node:fs");
+const path = process.argv[2];
+const settings = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : {};
+if (settings.defaultPlanTools === undefined) {
+  settings.defaultPlanTools = ["read", "bash", "grep", "find", "ls"];
+  fs.writeFileSync(path, JSON.stringify(settings, null, 2) + "\n");
+  console.log("  set defaultPlanTools so plan mode can explore");
+} else {
+  console.log("  defaultPlanTools already set; left alone");
+}
+PLAN
+
 # --- 6. Optional: Claude on a subscription -----------------------------------------------------
 # pi-claude-bridge runs Claude through Anthropic's own Agent SDK, and bills against a Pro/Max
 # plan the way Claude Code does. It replaces pi-claude-cli, which spawns the `claude` binary
