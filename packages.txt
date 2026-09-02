@@ -6,7 +6,7 @@ npm:@spences10/pi-lsp@0.0.46            # diagnostics and code navigation (LSP)
 npm:@spences10/pi-context@0.1.16        # oversized tool output goes to a sidecar, not context
 npm:@spences10/pi-mcp@0.0.60            # MCP client; no servers configured here
 npm:@spences10/pi-redact@0.0.15         # credential-pattern redaction
-npm:pi-subagents@0.62.0                 # delegation: background, parallel, chains
+npm:pi-subagents@0.63.0                 # delegation: background, parallel, chains
 npm:@narumitw/pi-goal@0.54.4            # /goal — budgets, no-progress guard, evidence
 npm:@narumitw/pi-statusline@0.50.0      # informative footer: model, tokens, git, cost
 npm:@narumitw/pi-usage@0.60.2           # /usage — account limits and consumption
